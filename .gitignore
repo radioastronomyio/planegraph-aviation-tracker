@@ -179,6 +179,7 @@ tensorboard/
 # Hugging Face
 .cache/
 models/
+!services/api/models/
 transformers_cache/
 
 # DVC

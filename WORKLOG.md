@@ -24,6 +24,60 @@ Session-by-session progress tracking. Agent instances (Claude Code, OpenCode, Cl
 
 ## Log
 
+### 2026-03-17 — Claude Code — WU-03: API Layer
+
+**Duration**: ~1h
+**Scope**: WU-03 implementation — FastAPI REST layer, in-memory live aircraft cache, WebSocket stream
+
+**Completed**:
+- Added `fastapi>=0.111.0`, `uvicorn[standard]>=0.29.0`, `websockets>=12.0`, `pydantic>=2.0` to `services/requirements.txt`; installed in `/opt/planegraph/venv`
+- Created `services/api/db.py` — asyncpg pool factory using env-var DSN
+- Created `services/api/live_state.py` — `LiveCache` with warm-restore from DB, `process_notify()` watermark-based incremental fetch, `expire_stale()`, `full_state()`, `snapshot_diff()`, and `aircraft_list()` / `aircraft_count()` accessors
+- Created `services/api/dependencies.py` — FastAPI `Depends()` injectors for pool and cache
+- Created `services/api/routes/health.py` — Postgres ping, ingest freshness (< 60 s), ultrafeeder TCP reachability
+- Created `services/api/routes/aircraft.py` — reads exclusively from live cache
+- Created `services/api/routes/flights.py` — paginated session list + single-flight detail with PostGIS trajectory GeoJSON
+- Created `services/api/routes/stats.py` — active aircraft, flights today, ingest rate/sec, materializer lag
+- Created `services/api/routes/airspace.py` — airports, airspace boundaries, POIs with GeoJSON geometry
+- Created `services/api/routes/config.py` — GET all config + PATCH single key (triggers `config_changed` NOTIFY)
+- Created `services/api/ws/live.py` — `ConnectionManager` broadcast + WS endpoint: `FULL_STATE` on connect, participates in broadcast loop
+- Created `services/api/main.py` — app factory with lifespan: pool init, cache restore, `LISTEN new_positions` task, `LISTEN config_changed` task, 1-second broadcast loop; dedicated connections (not pool-acquired) for listeners to allow clean removal on shutdown
+- Created `services/api/models/schemas.py` — Pydantic models for all endpoints
+- Updated `services/api/README.md` — documented actual layout, endpoint inventory, and WebSocket protocol
+
+**Acceptance Criteria Results**:
+- AC1: `uvicorn services.api.main:app --host 0.0.0.0 --port 8000` starts without traceback; logs `live-state listeners active` — ✅
+- AC2: `GET /api/v1/health` → `{"status": "healthy", "last_position_report": "..."}` — ✅
+- AC3: `GET /api/v1/aircraft` → 5–7 active aircraft from in-memory cache — ✅
+- AC4: `GET /api/v1/flights?limit=10` → JSON array of 10 recent sessions — ✅
+- AC5: `GET /api/v1/flights/{session_id}` → session + trajectory GeoJSON LineString — ✅
+- AC6: `GET /api/v1/stats` → `active_aircraft`, `flights_today=69`, `ingest_rate_per_sec=3.67`, `materializer_lag_sec` — ✅
+- AC7: first WS message has `type=FULL_STATE` with 6 aircraft — ✅
+- AC8: subsequent WS messages have `type=DIFFERENTIAL_UPDATE` with `updates` and `removals` — ✅
+- AC9: `PATCH /api/v1/config/session_gap_threshold_sec {"value": 600}` → returns updated entry; API log shows `config_changed session_gap=600` — ✅
+
+**Decisions**:
+- Listener tasks use dedicated `asyncpg.connect(dsn)` connections (not `pool.acquire()`) so listeners can be explicitly removed on shutdown without `InterfaceWarning`
+- `_on_notify` callback uses `asyncio.ensure_future()` to avoid blocking the listener callback
+- `snapshot_diff()` clears dirty/removal sets atomically under lock; new WS connections always get `FULL_STATE` first so they are never affected by stale diffs
+- `expire_stale()` is called before each `snapshot_diff()` in the broadcast loop to populate `removals` before the diff is sent
+- WebSocket connection keep-alive uses `recv()` with a 60-second timeout; disconnect is detected via `WebSocketDisconnect`
+
+**Artifacts**:
+- `services/requirements.txt` — added fastapi, uvicorn, websockets, pydantic
+- `services/api/__init__.py`, `db.py`, `dependencies.py`, `live_state.py`, `main.py`
+- `services/api/routes/__init__.py`, `aircraft.py`, `airspace.py`, `config.py`, `flights.py`, `health.py`, `stats.py`
+- `services/api/ws/__init__.py`, `live.py`
+- `services/api/models/__init__.py`, `schemas.py`
+- `services/api/README.md` — updated
+
+**Next**:
+- [ ] Begin WU-04 (Frontend Foundation — React + MapLibre GL + Deck.gl)
+- [ ] Add API service to docker-compose.yml (WU-07 scope)
+- [ ] Add systemd unit for API service (WU-07 scope)
+
+---
+
 ### 2026-03-17 — Claude.ai Session 4 — WU-02 Review & Pre-Commit Cleanup
 
 **Duration**: ~1h

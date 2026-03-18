@@ -4,12 +4,12 @@ title: "API Service"
 description: "FastAPI REST endpoints and WebSocket live aircraft feed"
 author: "VintageDon (https://github.com/vintagedon)"
 date: "2026-03-17"
-version: "1.0"
-status: "Planned"
+version: "1.1"
+status: "Complete"
 tags:
   - type: directory-readme
   - domain: api
-  - tech: [python, fastapi, websocket]
+  - tech: [python, fastapi, websocket, asyncpg]
 ---
 -->
 
@@ -17,7 +17,7 @@ tags:
 
 FastAPI application serving REST endpoints for flight queries, configuration management, and system health, plus a WebSocket endpoint for live aircraft position streaming to the frontend.
 
-**Status**: 📋 Planned (WU-03)
+**Status**: ✅ Complete (WU-03)
 
 ---
 
@@ -26,50 +26,98 @@ FastAPI application serving REST endpoints for flight queries, configuration man
 ```
 api/
 ├── README.md               # This file
-└── [WU-03 deliverables]    # Created during WU-03 implementation
+├── __init__.py
+├── main.py                 # App factory, lifespan, background tasks
+├── db.py                   # asyncpg pool factory
+├── dependencies.py         # FastAPI Depends() injectors
+├── live_state.py           # In-memory live aircraft cache
+├── routes/
+│   ├── __init__.py
+│   ├── aircraft.py         # GET /api/v1/aircraft (live cache)
+│   ├── airspace.py         # GET /api/v1/airspace (reference geometry)
+│   ├── config.py           # GET /api/v1/config, PATCH /api/v1/config/{key}
+│   ├── flights.py          # GET /api/v1/flights, GET /api/v1/flights/{id}
+│   ├── health.py           # GET /api/v1/health
+│   └── stats.py            # GET /api/v1/stats
+├── ws/
+│   ├── __init__.py
+│   └── live.py             # WS /api/v1/live (FULL_STATE + DIFFERENTIAL_UPDATE)
+└── models/
+    ├── __init__.py
+    └── schemas.py          # Pydantic request/response models
 ```
 
 ---
 
 ## 2. Design Summary
 
-The API is the single interface between the database and all consumers — the React frontend, external scripts, and the planned AI query interface. It exposes both historical query endpoints and a real-time WebSocket feed.
+The API is the single interface between the database and all consumers — the React frontend, external scripts, and the planned data science interface. It exposes both historical query endpoints and a real-time WebSocket feed.
 
 Key capabilities:
 
-- REST endpoints for flight session queries (by time range, airport, aircraft, phase)
-- REST endpoints for reference data (airports, runways, airspace, POIs)
-- REST endpoints for pipeline configuration (CRUD on `pipeline_config`)
-- REST endpoint for system health and statistics
-- WebSocket endpoint streaming live aircraft positions from the ingest daemon
-- OpenAPI/Swagger documentation auto-generated
+- In-memory live aircraft cache updated via `LISTEN new_positions` (no polling)
+- WebSocket endpoint: `FULL_STATE` on connect, `DIFFERENTIAL_UPDATE` every second
+- REST endpoints for flight session queries with PostGIS trajectory GeoJSON
+- REST endpoints for reference geometry (airports, runways, airspace, POIs)
+- REST endpoints for pipeline configuration with hot-reload via DB trigger
+- System health and operational statistics endpoints
+- OpenAPI/Swagger documentation auto-generated at `/docs`
 
 ---
 
-## 3. Expected Components
+## 3. Endpoint Inventory
 
-| Component | File | Purpose |
-|-----------|------|---------|
-| Application | `app.py` | FastAPI app factory, middleware, CORS |
-| Flight Routes | `routes/flights.py` | Flight session and position query endpoints |
-| Reference Routes | `routes/reference.py` | Airport, runway, airspace, POI endpoints |
-| Config Routes | `routes/config.py` | Pipeline configuration CRUD |
-| Health Routes | `routes/health.py` | System and container health endpoints |
-| WebSocket | `ws/live_feed.py` | Real-time aircraft position broadcast |
-| Database | `db.py` | Connection pool and query helpers |
-
-<!-- CC: When WU-03 code exists, update this README to document:
-     - Actual file inventory and module responsibilities
-     - Full endpoint inventory with request/response examples
-     - WebSocket message format and subscription model
-     - Authentication model (if implemented)
-     - Rate limiting and connection limits
-     - Performance characteristics (query latency, WebSocket throughput)
--->
+| Method | Path | Source | Description |
+|--------|------|--------|-------------|
+| `GET` | `/api/v1/health` | Postgres + TCP | API, DB, ingest, and ultrafeeder health |
+| `GET` | `/api/v1/aircraft` | Live cache | All currently tracked aircraft |
+| `GET` | `/api/v1/flights` | Postgres | Paginated session list (`?limit=&offset=`) |
+| `GET` | `/api/v1/flights/{id}` | Postgres | Session detail with trajectory GeoJSON |
+| `GET` | `/api/v1/stats` | Postgres + cache | Active aircraft, flights today, ingest rate, materializer lag |
+| `GET` | `/api/v1/airspace` | Postgres | Airports, boundaries, POIs as GeoJSON |
+| `GET` | `/api/v1/config` | Postgres | All `pipeline_config` entries |
+| `PATCH` | `/api/v1/config/{key}` | Postgres | Update a config value (triggers `config_changed` NOTIFY) |
+| `WS` | `/api/v1/live` | Live cache | Live aircraft WebSocket stream |
 
 ---
 
-## 4. Related
+## 4. WebSocket Protocol
+
+On connect, the client receives one `FULL_STATE` frame:
+
+```json
+{
+  "type": "FULL_STATE",
+  "timestamp": 1773712200.0,
+  "aircraft": {
+    "a12345": { "hex": "a12345", "lat": 39.995, "lon": -82.890, ... }
+  }
+}
+```
+
+Every subsequent second, the client receives a `DIFFERENTIAL_UPDATE`:
+
+```json
+{
+  "type": "DIFFERENTIAL_UPDATE",
+  "timestamp": 1773712201.0,
+  "updates": { "a12345": { "lat": 39.996, "lon": -82.884, ... } },
+  "removals": ["ab12cd"]
+}
+```
+
+---
+
+## 5. Running
+
+```bash
+POSTGRES_USER=planegraph POSTGRES_PASSWORD=... POSTGRES_DB=planegraph \
+  uvicorn services.api.main:app --host 0.0.0.0 --port 8000
+```
+
+---
+
+## 6. Related
 
 | Document | Relationship |
 |----------|--------------|
