@@ -1,0 +1,61 @@
+name: planegraph
+
+services:
+  planegraph-postgres:
+    image: postgis/postgis:16-3.4-alpine
+    container_name: planegraph-postgres
+    restart: unless-stopped
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATA: ${PGDATA}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      - ./postgres/init/:/docker-entrypoint-initdb.d/:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER:-planegraph}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - planegraph-net
+
+  planegraph-ultrafeeder:
+    image: ghcr.io/sdr-enthusiasts/docker-adsb-ultrafeeder:latest
+    container_name: planegraph-ultrafeeder
+    restart: unless-stopped
+    privileged: true
+    environment:
+      READSB_DEVICE_TYPE: ${READSB_DEVICE_TYPE}
+      READSB_RTLSDR_DEVICE: ${READSB_RTLSDR_DEVICE}
+      READSB_LAT: ${RECEIVER_LAT}
+      READSB_LON: ${RECEIVER_LON}
+      READSB_ALT: ${RECEIVER_ALT}m
+      READSB_GAIN: ${READSB_GAIN}
+      READSB_NET_SBS_OUTPUT_PORT: ${READSB_NET_SBS_OUTPUT_PORT}
+      READSB_NET_BEAST_OUTPUT_PORT: ${READSB_NET_BEAST_OUTPUT_PORT}
+      UPDATE_TAR1090: ${UPDATE_TAR1090}
+      TAR1090_DEFAULTCENTERLAT: ${RECEIVER_LAT}
+      TAR1090_DEFAULTCENTERLON: ${RECEIVER_LON}
+    volumes:
+      - /dev/bus/usb:/dev/bus/usb
+    ports:
+      - "8080:80"
+      - "30003:30003"
+      - "30005:30005"
+    networks:
+      - planegraph-net
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  planegraph-net:
+    driver: bridge
