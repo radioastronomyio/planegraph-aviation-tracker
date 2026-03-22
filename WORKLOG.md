@@ -24,6 +24,67 @@ Session-by-session progress tracking. Agent instances (Claude Code, OpenCode, Cl
 
 ## Log
 
+### 2026-03-21 — Claude Code — WU-04: Frontend Foundation
+
+**Duration**: ~2h
+**Scope**: WU-04 implementation — React SPA with MapLibre GL, Deck.gl aircraft layer, WebSocket live feed, Playwright e2e tests
+
+**Completed**:
+- Created `frontend/` Vite + React 18 + TypeScript project
+- Installed: `maplibre-gl`, `pmtiles`, `@deck.gl/core`, `@deck.gl/layers`, `react-router-dom`, `zustand`, `@playwright/test`
+- Created TypeScript types for WebSocket wire format (`FULL_STATE` / `DIFFERENTIAL_UPDATE`)
+- Implemented Zustand aircraft store with `applyMessage` handling full-record merges and removals
+- Implemented `useAircraftWebSocket` hook with auto-reconnect (3s delay)
+- Built `MapView` component: MapLibre GL JS basemap with PMTiles vector source, Deck.gl `IconLayer` in overlaid mode for aircraft, static OSM attribution overlay
+- Created placeholder aircraft atlas: 64×64 RGBA PNG + JSON atlas mapping (8 category keys)
+- Built React Router SPA: `/` → MapPage, `/dashboard` → DashboardPage, `/settings` → SettingsPage
+- Configured `vite.config.ts`: proxy `/api/*` and `/tiles/*` to `localhost:8000`, `ws: true` for WebSocket
+- Wrote 10 Playwright e2e tests with `page.routeWebSocket` injection (no live backend): navbar, routes, FULL_STATE count update, DIFFERENTIAL_UPDATE merge/remove/add, WS connected status, OSM attribution
+- Created `scripts/fetch-tiles.sh`: downloads Columbus PMTiles via protomaps API, falls back to valid stub if unavailable, `--stub` flag for CI
+- Verified all 7 acceptance criteria (details below)
+
+**Acceptance Criteria Results**:
+- AC1: `npm run build` exits 0, no TypeScript errors — ✅
+- AC2: `playwright test` — 10/10 passed, no live backend required — ✅
+- AC3: `grep -r "OpenStreetMap" frontend/dist/` — 1 match found — ✅
+- AC4: `scripts/fetch-tiles.sh --stub` produces valid PMTiles file (magic bytes confirmed) — ✅
+- AC5: `/dashboard` and `/settings` routes render NavBar + placeholder heading — ✅
+- AC6: Vite proxy config routes `/api/*` (ws=true) and `/tiles/*` to localhost:8000 — ✅
+- AC7: Deck.gl IconLayer in overlaid mode (canvas overlay, not MapLibre symbol layer) — ✅
+
+**Decisions**:
+- Deck.gl in "overlaid" mode: separate `<canvas>` element synced to MapLibre view via `map.on("move")` events; `controller: false` so MapLibre owns pan/zoom
+- Aircraft atlas: single-sprite placeholder (all categories map to same icon at offset 0,0); fine for WU-04, can be expanded in WU-05/06 with real SVG sprites
+- PMTiles attribution: static `<div>` overlay in MapView always renders OSM credit — not dependent on MapLibre WebGL init (which headless Chrome may skip)
+- `useAircraftWebSocket` placed in MapPage (not App) so Dashboard/Settings don't open WebSocket connections
+- `fetch-tiles.sh --stub` writes a valid 129-byte PMTiles v3 header for CI; full download path uses `pmtiles extract` CLI if available, else protomaps API
+- Removed Vite default boilerplate (hero, counters, Vite/React logos) entirely
+
+**Artifacts**:
+- `frontend/` — Full Vite+React+TS project
+- `frontend/src/types/aircraft.ts` — Wire format types
+- `frontend/src/store/aircraftStore.ts` — Zustand aircraft state
+- `frontend/src/hooks/useAircraftWebSocket.ts` — WebSocket with auto-reconnect
+- `frontend/src/components/MapView.tsx` + `MapView.module.css`
+- `frontend/src/components/NavBar.tsx` + `NavBar.module.css`
+- `frontend/src/pages/MapPage.tsx`, `DashboardPage.tsx`, `SettingsPage.tsx`
+- `frontend/src/App.tsx` — React Router layout
+- `frontend/public/atlas/aircraft-atlas.png` + `aircraft-atlas.json`
+- `frontend/public/tiles/columbus-region.pmtiles` — PMTiles stub
+- `frontend/e2e/map.spec.ts` — 10 Playwright tests
+- `frontend/e2e/fixtures.ts` — FULL_STATE + DIFFERENTIAL_UPDATE fixtures
+- `frontend/playwright.config.ts` — Playwright config (vite preview on 4173)
+- `scripts/fetch-tiles.sh` — Columbus PMTiles download script
+- `AGENTS.md` — WU-04 → Complete, WU-05 → Next
+- `README.md` — version 0.5, WU-04 status Complete
+
+**Next**:
+- [ ] Begin WU-05 (Dashboard & Configuration UI): flight statistics panels, system health, config editor
+- [ ] Replace aircraft atlas placeholder with real SVG-derived sprite sheet
+- [ ] Implement WU-03 API layer (FastAPI REST + WebSocket) to connect frontend to live data
+
+---
+
 ### 2026-03-21 — Claude.ai Session 6 + Claude Code — Outdoor Deployment & dump978
 
 **Duration**: ~1h

@@ -90,8 +90,8 @@ The project is implemented in seven sequential work units:
 | 01 | Infrastructure & Data Foundation | ✅ Complete |
 | 02 | Ingest Pipeline & Materialization | ✅ Complete |
 | 03 | API Layer | ✅ Complete |
-| 04 | Frontend Foundation | Next |
-| 05 | Dashboard & Configuration UI | Planned |
+| 04 | Frontend Foundation | ✅ Complete |
+| 05 | Dashboard & Configuration UI | Next |
 | 06 | Data Science & Visualization | Planned |
 | 07 | Integration & Polish | Planned |
 
@@ -124,6 +124,7 @@ planegraph-aviation-tracker/
 │   ├── ingest/                 # SBS consumer daemon (WU-02)
 │   ├── materializer/           # Scheduled materialization (WU-02)
 │   └── api/                    # FastAPI application (WU-03)
+├── frontend/                   # React SPA (WU-04)
 ├── docs/                       # Documentation and standards
 ├── internal-files/             # GDR research outputs (gitignored)
 ├── shared/                     # Cross-project utilities

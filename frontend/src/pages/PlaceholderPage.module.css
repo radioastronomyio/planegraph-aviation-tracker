@@ -1,0 +1,14 @@
+.page {
+  padding: 2rem;
+  color: #e0e0e0;
+}
+
+.page h1 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: #7eb8f7;
+}
+
+.page p {
+  color: #aaa;
+}

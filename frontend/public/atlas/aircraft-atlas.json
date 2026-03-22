@@ -1,0 +1,19 @@
+{
+  "default": {
+    "x": 0,
+    "y": 0,
+    "width": 64,
+    "height": 64,
+    "anchorX": 32,
+    "anchorY": 32,
+    "mask": true
+  },
+  "A1": { "x": 0, "y": 0, "width": 64, "height": 64, "anchorX": 32, "anchorY": 32, "mask": true },
+  "A2": { "x": 0, "y": 0, "width": 64, "height": 64, "anchorX": 32, "anchorY": 32, "mask": true },
+  "A3": { "x": 0, "y": 0, "width": 64, "height": 64, "anchorX": 32, "anchorY": 32, "mask": true },
+  "A4": { "x": 0, "y": 0, "width": 64, "height": 64, "anchorX": 32, "anchorY": 32, "mask": true },
+  "A5": { "x": 0, "y": 0, "width": 64, "height": 64, "anchorX": 32, "anchorY": 32, "mask": true },
+  "B1": { "x": 0, "y": 0, "width": 64, "height": 64, "anchorX": 32, "anchorY": 32, "mask": true },
+  "B2": { "x": 0, "y": 0, "width": 64, "height": 64, "anchorX": 32, "anchorY": 32, "mask": true },
+  "ground": { "x": 0, "y": 0, "width": 64, "height": 64, "anchorX": 32, "anchorY": 32, "mask": true }
+}

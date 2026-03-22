@@ -3,8 +3,8 @@
 title: "Planegraph"
 description: "Self-hosted aviation data platform for ADS-B aircraft surveillance"
 author: "VintageDon (https://github.com/vintagedon)"
-date: "2026-03-18"
-version: "0.4"
+date: "2026-03-21"
+version: "0.5"
 status: "Active"
 tags:
   - type: project-root
@@ -48,8 +48,8 @@ The entire system runs on a low-power edge box (Intel N100, 12GB RAM, 256GB SSD)
 | Infrastructure (WU-01) | ✅ Complete | Docker Compose, PostgreSQL/PostGIS, ultrafeeder, schema, seed data |
 | Ingest Pipeline (WU-02) | ✅ Complete | Python asyncio SBS consumer, session manager, phase classifier, batch writer, materializer |
 | API Layer (WU-03) | ✅ Complete | FastAPI REST + WebSocket live feed, in-memory aircraft cache, config PATCH |
-| Frontend (WU-04) | ⬜ Next | React SPA, MapLibre GL, Deck.gl aircraft layers |
-| Dashboard & Config (WU-05) | ⬜ Planned | Statistics panels, configuration UI, system health |
+| Frontend (WU-04) | ✅ Complete | React SPA, MapLibre GL, Deck.gl aircraft layers |
+| Dashboard & Config (WU-05) | ⬜ Next | Statistics panels, configuration UI, system health |
 | Data Science & Viz (WU-06) | ⬜ Planned | Trajectory replay, approach analysis, heatmaps |
 | Integration (WU-07) | ⬜ Planned | nginx, systemd, end-to-end testing, documentation |
 
@@ -101,6 +101,7 @@ planegraph-aviation-tracker/
 │   ├── ingest/                     # SBS consumer daemon (WU-02)
 │   ├── materializer/               # Scheduled materialization (WU-02)
 │   └── api/                        # FastAPI application (WU-03)
+├── 📂 frontend/                    # React SPA (WU-04)
 ├── 📂 docs/                        # Full project documentation
 │   ├── hardware/                   # BOM, signal chain, physical build
 │   ├── deployment/                 # Step-by-step from OS to running stack
@@ -170,4 +171,4 @@ All projects operate under open source licenses (primarily MIT) to ensure maximu
 
 ---
 
-Last Updated: March 18, 2026 | Status: WU-03 Complete, WU-04 Next
+Last Updated: March 21, 2026 | Status: WU-04 Complete, WU-05 Next
