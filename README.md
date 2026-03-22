@@ -3,8 +3,8 @@
 title: "Planegraph"
 description: "Self-hosted aviation data platform for ADS-B aircraft surveillance"
 author: "VintageDon (https://github.com/vintagedon)"
-date: "2026-03-21"
-version: "0.5"
+date: "2026-03-22"
+version: "0.6"
 status: "Active"
 tags:
   - type: project-root
@@ -49,8 +49,8 @@ The entire system runs on a low-power edge box (Intel N100, 12GB RAM, 256GB SSD)
 | Ingest Pipeline (WU-02) | ✅ Complete | Python asyncio SBS consumer, session manager, phase classifier, batch writer, materializer |
 | API Layer (WU-03) | ✅ Complete | FastAPI REST + WebSocket live feed, in-memory aircraft cache, config PATCH |
 | Frontend (WU-04) | ✅ Complete | React SPA, MapLibre GL, Deck.gl aircraft layers |
-| Dashboard & Config (WU-05) | ⬜ Next | Statistics panels, configuration UI, system health |
-| Data Science & Viz (WU-06) | ⬜ Planned | Trajectory replay, approach analysis, heatmaps |
+| Dashboard & Config (WU-05) | ✅ Complete | Statistics panels, Recharts charts, configuration UI, system health |
+| Data Science & Viz (WU-06) | ⬜ Next | Trajectory replay, approach analysis, heatmaps, airport analytics |
 | Integration (WU-07) | ⬜ Planned | nginx, systemd, end-to-end testing, documentation |
 
 ---
@@ -171,4 +171,4 @@ All projects operate under open source licenses (primarily MIT) to ensure maximu
 
 ---
 
-Last Updated: March 21, 2026 | Status: WU-04 Complete, WU-05 Next
+Last Updated: March 22, 2026 | Status: WU-05 Complete, WU-06 Next
