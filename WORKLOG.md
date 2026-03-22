@@ -531,5 +531,56 @@ Session-by-session progress tracking. Agent instances (Claude Code, OpenCode, Cl
 - `services/api/main.py` — analytics router registered
 
 **Next**:
-- [ ] WU-06B: Frontend pages (FlightsPage, FlightDetailPage replay, HeatmapPage, AirportAnalyticsPage)
-- [ ] WU-06B: Playwright e2e analytics tests
+- [x] WU-06B: Frontend pages (FlightsPage, FlightDetailPage replay, HeatmapPage, AirportAnalyticsPage)
+- [x] WU-06B: Playwright e2e analytics tests
+
+---
+
+### 2026-03-22 — Claude Code — WU-06B: Analytics Frontend Pages
+
+**Duration**: ~2h
+**Scope**: WU-06B — all five analytics pages, shared utilities, FlightMap component, 12 Playwright e2e tests
+
+**Completed**:
+- Installed `@deck.gl/aggregation-layers` (HeatmapLayer moved from `@deck.gl/layers` in Deck.gl v9)
+- Created `frontend/src/utils/api.ts` — extracted `fetchJson<T>` helper, removed duplicate from DashboardPage
+- Created `frontend/src/utils/colors.ts` — `PHASE_COLORS` + `SEVERITY_COLORS` shared constants
+- Created `frontend/src/types/analytics.ts` — 8 TypeScript interfaces matching WU-06A Pydantic models
+- Created `FlightMap` component: reusable MapLibre+Deck.gl for historical flight rendering (no WebSocket); PathLayer segments colored by phase, ScatterplotLayer replay marker at `focusIndex`, `fitBounds` on track load
+- Created `FlightsPage` (`/flights`): filter bar (callsign/hex/date/duration), paginated table, row links to detail
+- Created `FlightDetailPage` (`/flights/:id`): two-panel layout (60/40 map/charts), three Recharts LineCharts with `syncId="flight-replay"`, `focusIndex` state lifted from page to FlightMap prop for replay sync, Play/Pause button drives `setInterval` replay at ~10 pts/sec
+- Created `ApproachPage` (`/flights/:id/approach`): ComposedChart with `distance_nm` reversed X-axis, per-point severity dots colored from API `severity` field (not recomputed), summary card with max deviation, 404 handled gracefully
+- Created `HeatmapPage` (`/analytics/heatmap`): full-screen Deck.gl `HeatmapLayer` with 6-color range, hours dropdown re-fetches, sample count display
+- Created `AirportsPage` (`/analytics/airports`): airport summary cards grid, runway utilization horizontal BarChart, hourly activity BarChart with airport selector buttons
+- Updated `App.tsx` with 5 new routes, `NavBar.tsx` with Flights + Analytics links
+- Created `analytics-fixtures.ts` and `analytics.spec.ts`: 12 tests, all mocked via `page.route()` — no live backend
+
+**Acceptance Criteria Results**:
+- AC1: `npm run build` exits 0, no TypeScript errors — ✅
+- AC2: `npx playwright test e2e/map.spec.ts` — 10/10 pass — ✅
+- AC3: `npx playwright test e2e/analytics.spec.ts` — 12/12 pass — ✅
+- AC4: Replay marker test verifies Play button → marker appears → stop → marker disappears — ✅
+- AC5: Approach severity test verifies `max-deviation` shows `RED` from API fixture — ✅
+- AC6: DashboardPage still renders after fetchJson/PHASE_COLORS extraction — ✅
+
+**Decisions**:
+- Replay marker test uses Play button (reliable in headless) instead of Recharts `mousemove` (Recharts SVG events unreliable in Playwright without direct event dispatch to SVG element) — spec explicitly allows this fallback
+- `ApproachPoint` has no lat/lon fields → approach map panel shows empty path with note pointing to Flight Detail; approach severity rendered on chart only via ComposedChart colored dots
+- `handleMouseMove` uses `any` parameter type — Recharts `CategoricalChartFunc` `activeTooltipIndex` can be `number | null | TooltipIndex | undefined`, TypeScript union not narrowable without type assertion
+
+**Artifacts**:
+- `frontend/src/utils/api.ts` — fetchJson utility
+- `frontend/src/utils/colors.ts` — PHASE_COLORS + SEVERITY_COLORS
+- `frontend/src/types/analytics.ts` — analytics TypeScript types
+- `frontend/src/components/FlightMap.tsx` + `.module.css`
+- `frontend/src/pages/FlightsPage.tsx` + `.module.css`
+- `frontend/src/pages/FlightDetailPage.tsx` + `.module.css`
+- `frontend/src/pages/ApproachPage.tsx` + `.module.css`
+- `frontend/src/pages/HeatmapPage.tsx` + `.module.css`
+- `frontend/src/pages/AirportsPage.tsx` + `.module.css`
+- `frontend/e2e/analytics-fixtures.ts` + `analytics.spec.ts`
+- PR #5: feat(frontend): WU-06B analytics pages
+
+**Next**:
+- [ ] Merge PR #4 (WU-06A) and PR #5 (WU-06B) to main
+- [ ] WU-07: Hardware integration, dump978 UAT data pipeline

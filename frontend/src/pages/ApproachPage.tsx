@@ -10,7 +10,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import { FlightMap } from "../components/FlightMap";
-import type { ApproachAnalysis, ApproachPoint, TrackPoint } from "../types/analytics";
+import type { ApproachAnalysis, ApproachPoint } from "../types/analytics";
 import { SEVERITY_COLORS } from "../utils/colors";
 import styles from "./ApproachPage.module.css";
 
@@ -24,6 +24,9 @@ export function ApproachPage() {
   useEffect(() => {
     if (!sessionId) return;
     setLoading(true);
+    setNotFound(false);
+    setError(null);
+    setAnalysis(null);
     fetch(`/api/v1/flights/${sessionId}/approach-analysis`)
       .then(async (r) => {
         if (r.status === 404) {
@@ -67,35 +70,6 @@ export function ApproachPage() {
   }
 
   const { runway, points } = analysis;
-
-  // Build scatter data from approach points — severity colors from API
-  const scatterData = points.map((pt) => ({
-    position: [pt.distance_nm, pt.actual_alt_ft_msl] as [number, number],
-    color: hexToRgb(SEVERITY_COLORS[pt.severity] ?? "#7eb8f7") as [number, number, number],
-    radius: 5,
-    // We also need lat/lon for map; approximate from available data
-    // The map will use the points data directly
-  }));
-  void scatterData;
-
-  // Convert approach points to track-compatible for map
-  const mapPoints: TrackPoint[] = points.map((pt) => ({
-    timestamp: pt.timestamp,
-    lat: 0, // ApproachPoint doesn't have lat/lon - we'll skip map for approach
-    lon: 0,
-    alt_ft: pt.actual_alt_ft_msl,
-    speed_kts: null,
-    vrate_fpm: null,
-    track: null,
-    phase: pt.severity, // use severity as phase for color lookup — handled differently in map
-  }));
-  void mapPoints;
-
-  // For the approach map we build scatter data from the full track (if available)
-  // Since ApproachPoint doesn't include lat/lon, the map will show an empty path
-  // but the threshold marker and approach scatter are added via extraScatterData
-  const thresholdPoint = { lat: 0, lon: 0 }; // threshold lat/lon not in ApproachAnalysis schema
-  void thresholdPoint;
 
   // Severity summary
   const maxDev = points.reduce<ApproachPoint | null>((max, pt) => {
@@ -256,7 +230,3 @@ export function ApproachPage() {
   );
 }
 
-function hexToRgb(hex: string): [number, number, number] {
-  const n = parseInt(hex.replace("#", ""), 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-}

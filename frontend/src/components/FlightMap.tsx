@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
-import { Protocol } from "pmtiles";
 import { Deck } from "@deck.gl/core";
 import { PathLayer, ScatterplotLayer } from "@deck.gl/layers";
 import type { TrackPoint } from "../types/analytics";
-import { PHASE_COLORS } from "../utils/colors";
+import { PHASE_COLORS, hexToRgb } from "../utils/colors";
+import { ensurePmtilesProtocol } from "../utils/pmtiles";
 import "maplibre-gl/dist/maplibre-gl.css";
 import styles from "./FlightMap.module.css";
 
@@ -15,19 +15,6 @@ const INITIAL_VIEW = {
   pitch: 0,
   bearing: 0,
 };
-
-let pmtilesRegistered = false;
-function ensurePmtilesProtocol() {
-  if (pmtilesRegistered) return;
-  const protocol = new Protocol();
-  maplibregl.addProtocol("pmtiles", protocol.tile);
-  pmtilesRegistered = true;
-}
-
-function hexToRgb(hex: string): [number, number, number] {
-  const n = parseInt(hex.replace("#", ""), 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-}
 
 export interface FlightMapProps {
   trackPoints: TrackPoint[];
@@ -121,12 +108,6 @@ export function FlightMap({ trackPoints, focusIndex, extraScatterData, threshold
 
     // Path layer colored by phase
     if (trackPoints.length > 1) {
-      // Build path segments per phase run
-      const pathData = trackPoints.map((pt) => ({
-        path: [[pt.lon, pt.lat]] as [number, number][],
-        phase: pt.phase ?? "UNKNOWN",
-      }));
-
       // Merge consecutive same-phase points into segments
       const segments: Array<{ path: [number, number][]; color: [number, number, number] }> = [];
       let current: [number, number][] = [[trackPoints[0].lon, trackPoints[0].lat]];
@@ -145,9 +126,6 @@ export function FlightMap({ trackPoints, focusIndex, extraScatterData, threshold
           currentPhase = phase;
         }
       }
-
-      // Suppress unused variable warning
-      void pathData;
 
       layers.push(
         new PathLayer({

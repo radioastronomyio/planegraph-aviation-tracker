@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
-import { Protocol } from "pmtiles";
 import { Deck } from "@deck.gl/core";
 import { HeatmapLayer } from "@deck.gl/aggregation-layers";
 import type { HeatmapSample } from "../types/analytics";
 import { fetchJson } from "../utils/api";
+import { ensurePmtilesProtocol } from "../utils/pmtiles";
 import "maplibre-gl/dist/maplibre-gl.css";
 import styles from "./HeatmapPage.module.css";
 
@@ -15,14 +15,6 @@ const INITIAL_VIEW = {
   pitch: 0,
   bearing: 0,
 };
-
-let pmtilesRegistered = false;
-function ensurePmtilesProtocol() {
-  if (pmtilesRegistered) return;
-  const protocol = new Protocol();
-  maplibregl.addProtocol("pmtiles", protocol.tile);
-  pmtilesRegistered = true;
-}
 
 const HOURS_OPTIONS = [1, 6, 12, 24, 48, 72, 168];
 

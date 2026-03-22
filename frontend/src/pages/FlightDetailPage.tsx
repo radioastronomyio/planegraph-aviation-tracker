@@ -12,6 +12,7 @@ import {
 import { FlightMap } from "../components/FlightMap";
 import type { TrackPoint } from "../types/analytics";
 import { fetchJson } from "../utils/api";
+import { formatDuration } from "../utils/format";
 import styles from "./FlightDetailPage.module.css";
 
 interface FlightDetail {
@@ -25,17 +26,6 @@ interface FlightDetail {
   departure_airport_icao: string | null;
   arrival_airport_icao: string | null;
   trajectory: Record<string, unknown> | null;
-}
-
-function formatDuration(startedAt: string, endedAt: string | null): string {
-  if (!endedAt) return "In progress";
-  const secs = Math.round((new Date(endedAt).getTime() - new Date(startedAt).getTime()) / 1000);
-  const h = Math.floor(secs / 3600);
-  const m = Math.floor((secs % 3600) / 60);
-  const s = secs % 60;
-  if (h > 0) return `${h}h ${m}m`;
-  if (m > 0) return `${m}m ${s}s`;
-  return `${s}s`;
 }
 
 function timeLabel(ts: string): string {
@@ -76,7 +66,7 @@ export function FlightDetailPage() {
   }
 
   function handleMouseLeave() {
-    setFocusIndex(null);
+    if (!playing) setFocusIndex(null);
   }
 
   function togglePlay() {
@@ -88,7 +78,6 @@ export function FlightDetailPage() {
       let idx = focusIndex ?? 0;
       setPlaying(true);
       playIntervalRef.current = setInterval(() => {
-        idx += 1;
         if (idx >= track.length) {
           if (playIntervalRef.current) clearInterval(playIntervalRef.current);
           setPlaying(false);
@@ -96,6 +85,7 @@ export function FlightDetailPage() {
           return;
         }
         setFocusIndex(idx);
+        idx += 1;
       }, 100); // ~10 pts/sec
     }
   }

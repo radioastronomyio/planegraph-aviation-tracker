@@ -98,10 +98,10 @@ export const RUNWAY_UTILIZATION_FIXTURE: RunwayUtilization[] = [
 
 export const AIRPORT_HOURLY_FIXTURE_KCMH: AirportHourlyPoint[] = Array.from({ length: 25 }, (_, i) => ({
   hour_start: new Date(Date.now() - (24 - i) * 3600 * 1000).toISOString(),
-  flight_count: Math.floor(Math.random() * 5),
+  flight_count: i % 5,
 }));
 
 export const AIRPORT_HOURLY_FIXTURE_KLCK: AirportHourlyPoint[] = Array.from({ length: 25 }, (_, i) => ({
   hour_start: new Date(Date.now() - (24 - i) * 3600 * 1000).toISOString(),
-  flight_count: Math.floor(Math.random() * 3),
+  flight_count: i % 3,
 }));
