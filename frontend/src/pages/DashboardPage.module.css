@@ -1,0 +1,177 @@
+.page {
+  padding: 1.5rem;
+  color: #e0e0e0;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.page h1 {
+  font-size: 1.4rem;
+  margin: 0 0 1.25rem;
+  color: #7eb8f7;
+}
+
+/* Stats grid */
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.statCard {
+  background: #1a1d27;
+  border: 1px solid #2a2d3a;
+  border-radius: 8px;
+  padding: 0.875rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.statLabel {
+  font-size: 0.72rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.statValue {
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: #e0e0e0;
+  line-height: 1;
+}
+
+.statSub {
+  font-size: 0.72rem;
+  color: #666;
+  margin-top: 0.1rem;
+}
+
+/* Sections */
+
+.section {
+  background: #1a1d27;
+  border: 1px solid #2a2d3a;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.section h2 {
+  font-size: 0.85rem;
+  color: #7eb8f7;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 0.75rem;
+}
+
+/* Health */
+
+.healthRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.875rem;
+}
+
+.dotGreen {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  flex-shrink: 0;
+}
+
+.dotRed {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  flex-shrink: 0;
+}
+
+.healthLabel {
+  color: #aaa;
+}
+
+.healthSep {
+  display: inline-block;
+  width: 1px;
+  height: 16px;
+  background: #333;
+  margin: 0 0.25rem;
+}
+
+/* Charts */
+
+.chartWrap {
+  width: 100%;
+}
+
+/* Two-column layout */
+
+.twoCol {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 800px) {
+  .twoCol {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Table */
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.table th {
+  text-align: left;
+  padding: 0.4rem 0.75rem;
+  color: #888;
+  font-weight: 500;
+  border-bottom: 1px solid #2a2d3a;
+}
+
+.table td {
+  padding: 0.4rem 0.75rem;
+  border-bottom: 1px solid #1e2030;
+  color: #ccc;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.mono {
+  font-family: "Consolas", "Courier New", monospace;
+  font-size: 0.8rem;
+  color: #7eb8f7;
+}
+
+.empty {
+  text-align: center;
+  color: #555;
+  font-size: 0.82rem;
+  padding: 0.5rem 0;
+}
+
+.errorMsg {
+  color: #ef4444;
+  font-size: 0.9rem;
+}

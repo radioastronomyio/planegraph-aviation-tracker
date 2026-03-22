@@ -74,8 +74,27 @@ class AircraftRecord(BaseModel):
 class StatsResponse(BaseModel):
     active_aircraft: int
     flights_today: int
+    flights_in_last_hour: int
     ingest_rate_per_sec: float
     materializer_lag_sec: Optional[float]
+    storage_bytes: Optional[int]
+    oldest_data_date: Optional[str]  # YYYY-MM-DD
+
+
+class HourlyStatPoint(BaseModel):
+    hour_start: str  # ISO-8601 timestamp
+    flight_count: int
+
+
+class PhaseStatEntry(BaseModel):
+    phase: str
+    count: int
+
+
+class TopAircraftEntry(BaseModel):
+    hex: str
+    callsign: Optional[str]
+    flight_count: int
 
 
 # ---------------------------------------------------------------------------
