@@ -1,0 +1,144 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  color: #e0e0e0;
+}
+
+.topBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 1rem;
+  background: #1a1d27;
+  border-bottom: 1px solid #2a2d3a;
+  flex-shrink: 0;
+}
+
+.backLink,
+.approachLink {
+  color: #7eb8f7;
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
+.backLink:hover,
+.approachLink:hover {
+  text-decoration: underline;
+}
+
+.layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.mapPanel {
+  flex: 0 0 60%;
+  position: relative;
+  overflow: hidden;
+}
+
+.infoPanel {
+  flex: 0 0 40%;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.metaCard {
+  background: #1a1d27;
+  border: 1px solid #2a2d3a;
+  border-radius: 8px;
+  padding: 0.875rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.metaRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.metaLabel {
+  color: #888;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.metaValue {
+  color: #e0e0e0;
+}
+
+.mono {
+  font-family: "Consolas", "Courier New", monospace;
+  font-size: 0.8rem;
+  color: #7eb8f7;
+}
+
+.playBar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.playBtn {
+  background: #1a1d27;
+  border: 1px solid #2a2d3a;
+  border-radius: 6px;
+  color: #7eb8f7;
+  padding: 0.35rem 0.875rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.playBtn:hover {
+  border-color: #7eb8f7;
+}
+
+.playInfo {
+  color: #888;
+  font-size: 0.8rem;
+}
+
+.charts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.chartBlock {
+  background: #1a1d27;
+  border: 1px solid #2a2d3a;
+  border-radius: 8px;
+  padding: 0.75rem 1rem 0.5rem;
+}
+
+.chartBlock h3 {
+  font-size: 0.75rem;
+  color: #7eb8f7;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 0.4rem;
+}
+
+.errorMsg {
+  color: #ef4444;
+  font-size: 0.9rem;
+  padding: 1rem;
+}
+
+.loadingMsg {
+  color: #888;
+  font-size: 0.9rem;
+  padding: 1rem;
+}

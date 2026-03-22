@@ -1,10 +1,6 @@
 import { useEffect, useState } from "react";
-
-async function fetchJson<T>(url: string): Promise<T> {
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
-  return r.json() as Promise<T>;
-}
+import { fetchJson } from "../utils/api";
+import { PHASE_COLORS } from "../utils/colors";
 import {
   Bar,
   BarChart,
@@ -49,17 +45,6 @@ interface TopAircraftEntry {
   callsign: string | null;
   flight_count: number;
 }
-
-const PHASE_COLORS: Record<string, string> = {
-  GND: "#64748b",
-  TOF: "#f59e0b",
-  CLB: "#22c55e",
-  CRZ: "#3b82f6",
-  DES: "#a855f7",
-  APP: "#f97316",
-  LDG: "#ef4444",
-  UNKNOWN: "#6b7280",
-};
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
