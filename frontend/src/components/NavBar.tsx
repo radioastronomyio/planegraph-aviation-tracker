@@ -16,6 +16,12 @@ export function NavBar() {
         <NavLink to="/dashboard" className={({ isActive }) => isActive ? styles.active : ""}>
           Dashboard
         </NavLink>
+        <NavLink to="/flights" className={({ isActive }) => isActive ? styles.active : ""}>
+          Flights
+        </NavLink>
+        <NavLink to="/analytics/airports" className={({ isActive }) => isActive ? styles.active : ""}>
+          Analytics
+        </NavLink>
         <NavLink to="/settings" className={({ isActive }) => isActive ? styles.active : ""}>
           Settings
         </NavLink>

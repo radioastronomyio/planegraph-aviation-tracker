@@ -12,6 +12,7 @@
     "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
+    "@deck.gl/aggregation-layers": "^9.2.11",
     "@deck.gl/core": "^9.2.11",
     "@deck.gl/layers": "^9.2.11",
     "@deck.gl/mapbox": "^9.2.11",

@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
-import { Protocol } from "pmtiles";
 import { Deck } from "@deck.gl/core";
 import { IconLayer } from "@deck.gl/layers";
 import { useAircraftStore } from "../store/aircraftStore";
 import type { Aircraft } from "../types/aircraft";
+import { ensurePmtilesProtocol } from "../utils/pmtiles";
 import "maplibre-gl/dist/maplibre-gl.css";
 import styles from "./MapView.module.css";
 
@@ -16,15 +16,6 @@ const INITIAL_VIEW = {
   pitch: 0,
   bearing: 0,
 };
-
-// PMTiles protocol registration (idempotent)
-let pmtilesRegistered = false;
-function ensurePmtilesProtocol() {
-  if (pmtilesRegistered) return;
-  const protocol = new Protocol();
-  maplibregl.addProtocol("pmtiles", protocol.tile);
-  pmtilesRegistered = true;
-}
 
 const ATLAS_URL = "/atlas/aircraft-atlas.png";
 const ATLAS_MAPPING_URL = "/atlas/aircraft-atlas.json";
