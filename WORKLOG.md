@@ -497,3 +497,39 @@ Session-by-session progress tracking. Agent instances (Claude Code, OpenCode, Cl
 - [x] Review GDR-02/03 outputs when they land
 - [x] Begin docker-compose stack (postgres + ultrafeeder) once GDR-02 output provides schema
 - [x] Design doc / architecture document consolidating GDR outputs into implementation spec
+
+---
+
+### 2026-03-22 — Claude Code — WU-06A: Analytics API Endpoints
+
+**Duration**: ~1h
+**Scope**: Backend analytics API — flight filtering, track, approach analysis, heatmap, airport stats
+
+**Completed**:
+- Enhanced `GET /api/v1/flights` with `start`, `end`, `callsign` (prefix), `hex` (exact), `min_duration_sec` filters via dynamic parameterised query builder
+- Created `services/api/routes/analytics.py` with 7 new endpoints
+- `GET /api/v1/flights/{session_id}/track` — ordered position_reports time-series (timestamp, lat, lon, alt_ft, speed_kts, vrate_fpm, track, phase)
+- `GET /api/v1/flights/{session_id}/approach-analysis` — server-side glideslope deviation; runway selection by heading-match when arrival_airport_icao is set, nearest-runway fallback via ST_DWithin; 3-tier severity (GREEN ≤100ft, YELLOW ≤200ft, RED >200ft)
+- `GET /api/v1/analytics/heatmap-samples?hours&limit` — random-sampled lat/lon/weight=1.0 points, no server-side binning
+- `GET /api/v1/analytics/airports/summary?hours` — arrivals+departures per airport using FILTER aggregation
+- `GET /api/v1/analytics/airports/runway-utilization?hours` — last-position ST_DWithin 3NM + <1500ft AGL heuristic
+- `GET /api/v1/analytics/airports/hourly?icao&hours` — generate_series slot pattern matching stats.py _HOURLY_SQL
+- Added 7 Pydantic models to schemas.py: TrackPoint, RunwayInfo, ApproachPoint, ApproachAnalysis, HeatmapSample, AirportSummary, RunwayUtilization, AirportHourlyPoint
+- Registered analytics router in main.py
+- AC6: `python -m compileall services/api/` — clean
+
+**Decisions**:
+- Approach runway selection: use heading-match against aircraft's average track over final 20 reports (aircraft approaches toward runway heading); fall back to nearest-threshold if no track data available
+- Glideslope formula pinned: `expected = threshold_elev + 50 + (distance_ft * tan(3°))`, `tan(3°) = 0.05240778`
+- Heatmap uses `ORDER BY random() LIMIT` — acceptable at current data volumes per spec; TABLESAMPLE deferred to future optimization
+- No new pip dependencies (math.tan is stdlib)
+
+**Artifacts**:
+- `services/api/routes/analytics.py` — new file (7 endpoints)
+- `services/api/routes/flights.py` — extended with filter params
+- `services/api/models/schemas.py` — 7 new Pydantic models
+- `services/api/main.py` — analytics router registered
+
+**Next**:
+- [ ] WU-06B: Frontend pages (FlightsPage, FlightDetailPage replay, HeatmapPage, AirportAnalyticsPage)
+- [ ] WU-06B: Playwright e2e analytics tests

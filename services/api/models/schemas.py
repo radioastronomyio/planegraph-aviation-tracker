@@ -98,6 +98,66 @@ class TopAircraftEntry(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Analytics — Track / Approach / Heatmap / Airport
+# ---------------------------------------------------------------------------
+
+class TrackPoint(BaseModel):
+    timestamp: datetime
+    lat: float
+    lon: float
+    alt_ft: Optional[int]
+    speed_kts: Optional[int]
+    vrate_fpm: Optional[int]
+    track: Optional[float]
+    phase: Optional[str]
+
+
+class RunwayInfo(BaseModel):
+    icao: str
+    designator: str
+    threshold_elevation_ft: int
+    heading_true: float
+
+
+class ApproachPoint(BaseModel):
+    timestamp: datetime
+    distance_nm: float
+    actual_alt_ft_msl: int
+    expected_alt_ft_msl: int
+    deviation_ft: int
+    severity: str  # GREEN | YELLOW | RED
+
+
+class ApproachAnalysis(BaseModel):
+    runway: RunwayInfo
+    points: List[ApproachPoint]
+
+
+class HeatmapSample(BaseModel):
+    lat: float
+    lon: float
+    weight: float
+
+
+class AirportSummary(BaseModel):
+    icao: str
+    name: str
+    arrivals: int
+    departures: int
+
+
+class RunwayUtilization(BaseModel):
+    airport_icao: str
+    designator: str
+    flight_count: int
+
+
+class AirportHourlyPoint(BaseModel):
+    hour_start: str
+    flight_count: int
+
+
+# ---------------------------------------------------------------------------
 # Health
 # ---------------------------------------------------------------------------
 

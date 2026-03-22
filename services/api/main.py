@@ -34,7 +34,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .db import create_pool
 from .live_state import LiveCache
-from .routes import aircraft, airspace, config, flights, health, stats
+from .routes import aircraft, airspace, analytics, config, flights, health, stats
 from .ws import live as ws_live
 
 log = logging.getLogger(__name__)
@@ -224,6 +224,7 @@ def create_app() -> FastAPI:
     application.include_router(health.router)
     application.include_router(aircraft.router)
     application.include_router(flights.router)
+    application.include_router(analytics.router)
     application.include_router(stats.router)
     application.include_router(airspace.router)
     application.include_router(config.router)

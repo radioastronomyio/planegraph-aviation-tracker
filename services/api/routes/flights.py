@@ -2,6 +2,8 @@
 routes/flights.py — Flight session query endpoints.
 
 GET /api/v1/flights         — paginated list of sessions (newest first)
+                              optional filters: start, end, callsign, hex,
+                              min_duration_sec
 GET /api/v1/flights/{id}    — single session with trajectory GeoJSON
 """
 
@@ -9,6 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
@@ -20,23 +23,6 @@ from ..models.schemas import FlightDetail, FlightSummary
 
 log = logging.getLogger(__name__)
 router = APIRouter()
-
-_LIST_SQL = """
-select
-    session_id,
-    hex,
-    callsign,
-    started_at,
-    ended_at,
-    on_ground,
-    total_distance_nm,
-    departure_airport_icao,
-    arrival_airport_icao
-from flight_sessions
-order by started_at desc
-limit  $1
-offset $2
-"""
 
 _DETAIL_SQL = """
 select
@@ -54,30 +40,92 @@ from flight_sessions
 where session_id = $1
 """
 
+_LIST_BASE = """
+select
+    session_id,
+    hex,
+    callsign,
+    started_at,
+    ended_at,
+    on_ground,
+    total_distance_nm,
+    departure_airport_icao,
+    arrival_airport_icao
+from flight_sessions
+"""
+
+
+def _build_list_query(
+    start: Optional[datetime],
+    end: Optional[datetime],
+    callsign: Optional[str],
+    hex_: Optional[str],
+    min_duration_sec: Optional[int],
+    limit: int,
+    offset: int,
+) -> tuple[str, list]:
+    """Build a parameterised flight list query. Returns (sql, params)."""
+    conditions: list[str] = []
+    params: list[Any] = []
+    idx = 1  # $1, $2, …
+
+    if start is not None:
+        conditions.append(f"started_at >= ${idx}")
+        params.append(start)
+        idx += 1
+
+    if end is not None:
+        conditions.append(f"started_at <= ${idx}")
+        params.append(end)
+        idx += 1
+
+    if callsign is not None:
+        conditions.append(f"upper(callsign) like upper(${idx} || '%')")
+        params.append(callsign)
+        idx += 1
+
+    if hex_ is not None:
+        conditions.append(f"hex = ${idx}")
+        params.append(hex_)
+        idx += 1
+
+    if min_duration_sec is not None:
+        conditions.append(f"ended_at is not null")
+        conditions.append(
+            f"extract(epoch from (ended_at - started_at)) >= ${idx}"
+        )
+        params.append(float(min_duration_sec))
+        idx += 1
+
+    where = ("where " + " and ".join(conditions)) if conditions else ""
+    sql = (
+        f"{_LIST_BASE} {where} "
+        f"order by started_at desc "
+        f"limit ${idx} offset ${idx + 1}"
+    )
+    params.extend([limit, offset])
+    return sql, params
+
 
 @router.get("/api/v1/flights", response_model=List[FlightSummary])
 async def list_flights(
     limit: int = Query(default=50, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
+    start: Optional[datetime] = Query(default=None),
+    end: Optional[datetime] = Query(default=None),
+    callsign: Optional[str] = Query(default=None, max_length=10),
+    hex: Optional[str] = Query(default=None, max_length=6),
+    min_duration_sec: Optional[int] = Query(default=None, ge=1),
     pool: asyncpg.Pool = Depends(get_pool),
 ) -> List[FlightSummary]:
     """
     Return a paginated list of flight sessions, newest first.
 
-    Parameters
-    ----------
-    limit : int
-        Maximum number of sessions to return (1–500, default 50).
-    offset : int
-        Row offset for pagination.
-    pool : asyncpg.Pool
-        Injected DB pool.
-
-    Returns
-    -------
-    list of FlightSummary
+    Optional filters: start, end, callsign (prefix), hex (exact),
+    min_duration_sec (implies ended_at IS NOT NULL).
     """
-    rows = await pool.fetch(_LIST_SQL, limit, offset)
+    sql, params = _build_list_query(start, end, callsign, hex, min_duration_sec, limit, offset)
+    rows = await pool.fetch(sql, *params)
     return [
         FlightSummary(
             session_id=row["session_id"],
@@ -101,18 +149,6 @@ async def get_flight(
 ) -> FlightDetail:
     """
     Return detailed session data including trajectory as GeoJSON.
-
-    Parameters
-    ----------
-    session_id : UUID
-        Flight session identifier.
-    pool : asyncpg.Pool
-        Injected DB pool.
-
-    Returns
-    -------
-    FlightDetail
-        Session metadata plus optional trajectory GeoJSON.
 
     Raises
     ------
