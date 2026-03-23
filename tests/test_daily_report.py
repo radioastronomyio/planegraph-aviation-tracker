@@ -26,8 +26,9 @@ from daily_report import (
     detect_gaps,
     extract_callsign_prefix,
     output_path,
-    page3_altitude_speed,
     page4_spatial,
+    page6_altitude,
+    utc_to_edt_label,
 )
 
 
@@ -54,7 +55,6 @@ def test_output_path_generation_different_month():
 def test_partial_day_detection():
     """Data spanning 08:00–22:00 gives 14 hours, 58.3% completeness."""
     day_start = datetime(2026, 3, 21, 0, 0, 0, tzinfo=timezone.utc)
-    # Build hourly_df for hours 8–21 inclusive (14 hours)
     hours = [day_start + timedelta(hours=h) for h in range(8, 22)]
     hourly_df = pd.DataFrame({
         "hour": pd.to_datetime(hours, utc=True),
@@ -194,7 +194,7 @@ def test_missing_database_url(tmp_path):
 # ---------------------------------------------------------------------------
 
 def test_null_handling_in_plots(tmp_path):
-    """page3_altitude_speed must handle DataFrames with 80% NULL alt_ft."""
+    """page6_altitude must handle DataFrames with 80% NULL alt_ft."""
     import matplotlib
     matplotlib.use("Agg")
     from matplotlib.backends.backend_pdf import PdfPages
@@ -206,22 +206,20 @@ def test_null_handling_in_plots(tmp_path):
         "vrate_fpm": pd.array([None] * 100 + list(np.random.randint(-2000, 2000, 900)), dtype="object"),
         "flight_phase": ["CRZ"] * 500 + ["CLB"] * 300 + [None] * 200,
     })
-    # Convert to numeric (NULLs become NaN)
     for col in ["alt_ft", "speed_kts", "vrate_fpm"]:
         df[col] = pd.to_numeric(df[col], errors="coerce")
 
     report_date = date(2026, 3, 21)
     pdf_path = tmp_path / "test_null.pdf"
 
-    # Must not raise
     with PdfPages(str(pdf_path)) as pdf:
-        page3_altitude_speed(pdf, report_date, df)
+        page6_altitude(pdf, report_date, df)
 
     assert pdf_path.exists()
 
 
 # ---------------------------------------------------------------------------
-# 9. Station coords optional — range plot skipped without error
+# 9. Station coords optional — map page skipped without error
 # ---------------------------------------------------------------------------
 
 def test_station_coords_optional(tmp_path):
@@ -245,3 +243,155 @@ def test_station_coords_optional(tmp_path):
         page4_spatial(pdf, report_date, df, airports_df, station_lat=None, station_lon=None)
 
     assert pdf_path.exists()
+
+
+# ---------------------------------------------------------------------------
+# 10. Registry fallback — empty registry uses callsign classification
+# ---------------------------------------------------------------------------
+
+def test_registry_fallback(tmp_path):
+    """Fleet classification falls back to callsign-based when registry is empty."""
+    import matplotlib
+    matplotlib.use("Agg")
+    from matplotlib.backends.backend_pdf import PdfPages
+    from daily_report import page9_fleet_composition
+
+    n = 50
+    positions_df = pd.DataFrame({
+        "hex": [f"A{i:05X}" for i in range(n)],
+        "category": ["A3"] * n,
+    })
+    sessions_df = pd.DataFrame({
+        "hex": [f"A{i:05X}" for i in range(n)],
+        "callsign": ["AAL" + str(1000 + i) for i in range(25)] + ["N" + str(10000 + i) for i in range(25)],
+    })
+    registry_df = pd.DataFrame(columns=["hex", "n_number", "manufacturer", "model", "aircraft_type", "fleet_category"])
+
+    report_date = date(2026, 3, 21)
+    pdf_path = tmp_path / "test_fallback.pdf"
+
+    with PdfPages(str(pdf_path)) as pdf:
+        page9_fleet_composition(pdf, report_date, positions_df, sessions_df, registry_df)
+
+    assert pdf_path.exists()
+
+
+# ---------------------------------------------------------------------------
+# 11. Light theme rcParams
+# ---------------------------------------------------------------------------
+
+def test_light_theme_colors():
+    """apply_light_style sets white facecolor and dark text."""
+    from daily_report import apply_light_style
+    import matplotlib.pyplot as plt
+
+    apply_light_style()
+    assert plt.rcParams["figure.facecolor"] == "#ffffff"
+    assert plt.rcParams["text.color"] == "#212529"
+
+
+# ---------------------------------------------------------------------------
+# 12. Page count — generate test PDF with 12 pages
+# ---------------------------------------------------------------------------
+
+def test_page_count(tmp_path, monkeypatch):
+    """Generate a full test PDF (mocked DB) and verify it has 12 pages."""
+    import matplotlib
+    matplotlib.use("Agg")
+    from pypdf import PdfReader
+    import daily_report as dr
+
+    report_date = date(2026, 3, 21)
+    day_start = datetime(2026, 3, 21, 0, 0, 0, tzinfo=timezone.utc)
+    day_end = day_start + timedelta(days=1)
+
+    n = 200
+    rng = np.random.default_rng(42)
+    hours = [day_start + timedelta(hours=h) for h in range(24)]
+    hourly_df = pd.DataFrame({
+        "hour": pd.to_datetime(hours, utc=True),
+        "reports": rng.integers(100, 500, 24).tolist(),
+        "unique_aircraft": rng.integers(10, 50, 24).tolist(),
+    })
+    positions_df = pd.DataFrame({
+        "report_time": pd.to_datetime([day_start + timedelta(minutes=i * 5) for i in range(n)], utc=True),
+        "hex": [f"A{i:05X}" for i in range(n)],
+        "lat": rng.uniform(39.5, 40.5, n),
+        "lon": rng.uniform(-83.5, -82.5, n),
+        "alt_ft": rng.uniform(1000, 40000, n),
+        "speed_kts": rng.uniform(100, 500, n),
+        "vrate_fpm": rng.uniform(-2000, 2000, n),
+        "track": rng.uniform(0, 360, n),
+        "flight_phase": rng.choice(["CRZ", "CLB", "DES", "APP"], n).tolist(),
+        "squawk": [None] * n,
+        "on_ground": [False] * n,
+        "category": ["A3"] * n,
+        "session_id": [f"sess-{i}" for i in range(n)],
+    })
+    started = [day_start + timedelta(minutes=i * 3) for i in range(n)]
+    ended = [s + timedelta(minutes=15) for s in started]
+    sessions_df = pd.DataFrame({
+        "session_id": [f"sess-{i}" for i in range(n)],
+        "hex": [f"A{i:05X}" for i in range(n)],
+        "callsign": ["AAL" + str(1000 + i) if i % 3 == 0 else f"N{10000 + i}" for i in range(n)],
+        "started_at": pd.to_datetime(started, utc=True),
+        "ended_at": pd.to_datetime(ended, utc=True),
+        "on_ground": [False] * n,
+        "departure_airport_icao": [None] * n,
+        "arrival_airport_icao": [None] * n,
+        "total_distance_nm": rng.uniform(10, 300, n).tolist(),
+        "has_trajectory": [True] * (n // 2) + [False] * (n // 2),
+        "created_at": pd.to_datetime(started, utc=True),
+    })
+    concurrent_df = pd.DataFrame({
+        "hour_start": pd.to_datetime(hours, utc=True),
+        "concurrent_sessions": rng.integers(5, 30, 24).tolist(),
+    })
+    per_min_df = pd.DataFrame({
+        "minute": pd.to_datetime([day_start + timedelta(minutes=i) for i in range(0, 1440, 5)], utc=True),
+        "reports": rng.integers(1, 50, 288).tolist(),
+    })
+    null_df = pd.DataFrame({
+        "total": [10000], "null_alt_ft": [200], "null_speed_kts": [100],
+        "null_vrate_fpm": [150], "null_track": [50], "null_squawk": [3000], "null_category": [5000],
+    })
+    airports_df = pd.DataFrame(columns=["icao_code", "lat", "lon"])
+    partition_df = pd.DataFrame(columns=["partition_name", "total_size", "size_bytes"])
+    registry_df = pd.DataFrame(columns=["hex", "n_number", "manufacturer", "model", "aircraft_type", "fleet_category"])
+    gaps = []
+    summary = {"total_reports": 50000, "unique_aircraft": 150, "sessions_in_window": 200}
+
+    dr.apply_light_style()
+    pdf_path = tmp_path / "test_12pages.pdf"
+    from matplotlib.backends.backend_pdf import PdfPages
+
+    with PdfPages(str(pdf_path)) as pdf:
+        dr.page1_executive_summary(pdf, report_date, summary, hourly_df, sessions_df, gaps, day_start, day_end, datetime.now(timezone.utc))
+        dr.page2_temporal_profile(pdf, report_date, hourly_df, gaps, day_start)
+        dr.page3_concurrent_sessions(pdf, report_date, concurrent_df, gaps)
+        dr.page4_spatial(pdf, report_date, positions_df, airports_df, None, None)
+        dr.page5_track_rose(pdf, report_date, positions_df)
+        dr.page6_altitude(pdf, report_date, positions_df)
+        dr.page7_speed_vrate(pdf, report_date, positions_df)
+        dr.page8_speed_altitude_scatter(pdf, report_date, positions_df)
+        dr.page9_fleet_composition(pdf, report_date, positions_df, sessions_df, registry_df)
+        dr.page10_session_quality(pdf, report_date, sessions_df, positions_df, registry_df)
+        dr.page11_data_quality(pdf, report_date, per_min_df, null_df, gaps, day_start)
+        dr.page12_system_health(pdf, report_date, partition_df, "1.2 GB")
+
+    reader = PdfReader(str(pdf_path))
+    assert len(reader.pages) == 12
+
+
+# ---------------------------------------------------------------------------
+# 13. UTC to EDT conversion for March
+# ---------------------------------------------------------------------------
+
+def test_edt_conversion():
+    """UTC-to-EDT for March dates: UTC-4."""
+    # 17:00 UTC = 13:00 EDT
+    assert utc_to_edt_label(17) == "13:00 EDT"
+    # 00:00 UTC = 20:00 EDT (previous day)
+    assert utc_to_edt_label(0) == "20:00 EDT"
+    # 04:00 UTC = 00:00 EDT
+    assert utc_to_edt_label(4) == "00:00 EDT"
